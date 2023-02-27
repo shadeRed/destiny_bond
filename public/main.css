@@ -1,0 +1,216 @@
+:root {
+    --global-background-color: #111;
+    --background-color: #222;
+    --border-color: #444;
+    --disabled-background-color: #333;
+    --disabled-text-color: #777;
+    --header-text-color: #CCC;
+    --text-color: #EEE;
+
+    --scrollbar-color: #FFFFFF30;
+
+    --link-color: #9fb9ff;
+    --link-color-hover: #becfff;
+
+    --colors-red: #FF4040;
+    --colors-yellow: #FFFF40;
+    --colors-green: #40FF40;
+    --colors-cyan: #40FFFF;
+    --colors-blue: #4040FF;
+    --colors-magenta: #FF40FF;
+}
+
+:root.light {
+    --global-background-color: #dfdfdf;
+    --background-color: #EEE;
+    --border-color: #d1d1d1;
+    --disabled-background-color: #dddddd;
+    --disabled-text-color: #999;
+    --header-text-color: #333;
+    --text-color: #111;
+
+    --scrollbar-color: #00000030;
+
+    --colors-red: #BB0000;
+    --colors-yellow: #999900;
+    --colors-green: #009900;
+    --colors-cyan: #00BBBB;
+    --colors-blue: #0000BB;
+    --colors-magenta: #BB00BB;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-color);
+    border: 5px solid var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-color);
+    border-radius: 10px;
+    transition: all 0.1s;
+    cursor: pointer;
+}
+
+html, div#app {
+    background-color: var(--global-background-color);
+}
+
+* {
+    transition: background-color 0.2s !important;
+    transition: color 0.2s !important;
+    transition: border-color 0.2s !important;
+}
+
+textarea:hover,
+input:hover,
+textarea:active,
+input:active,
+textarea:focus,
+input:focus,
+button:focus,
+button:active,
+button:hover,
+label:focus,
+.btn:active,
+.btn.active
+{
+    outline: 0px !important;
+    -webkit-appearance: none;
+    box-shadow: none !important;
+}
+
+div.container {
+    margin: 40px auto;
+    color: var(--text-color);
+}
+
+div.section {
+    background-color: var(--background-color);
+    border: solid 3px var(--border-color);
+    border-radius: 10px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    padding: 20px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+h2, h3, h4, h5, h6 {
+    letter-spacing: 2px;
+    color: var(--header-text-color);
+}
+
+h1 {
+    font-size: 24px;
+    letter-spacing: 3px;
+    margin: 10px;
+}
+
+h2 {
+    font-size: 24px;
+    border-bottom: solid 3px var(--border-color);
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+h3 {
+    font-size: 14px;
+    margin: 20px 0 5px 0;
+}
+
+h6 {
+    font-size: 13px;
+    margin: 20px 0 5px 5px;
+}
+
+table {
+    width: 100%;
+}
+
+table tr th, .header.row div {
+    letter-spacing: 2px;
+    color: var(--header-text-color);
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+table tr th { margin: 20px 0 5px 0; }
+
+.bold {
+    letter-spacing: 2px;
+    color: var(--header-text-color);
+    font-size: 13px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+button, input[type="text"], select {
+    background-color: var(--background-color);
+    border: solid 3px var(--border-color);
+    padding: 5px 10px;
+    border-radius: 10px;
+    color: var(--header-text-color);
+    font-size: 13px;
+    transition: all 0.2s !important;
+    height: 36px;
+}
+
+button {
+    text-transform: uppercase;
+    color: var(--header-text-color);
+    font-weight: bold;
+    letter-spacing: 2px;
+    height: 36px;
+}
+
+button i {
+    padding-left: 3px;
+}
+
+button:hover, select:hover { background-color: var(--border-color); }
+
+button:disabled, input:disabled, select:disabled {
+    background-color: var(--disabled-background-color);
+    color: var(--disabled-text-color);
+}
+
+button:disabled:hover, input:disabled, select:disabled:hover { background-color: var(--disabled-background-color); }
+
+table tr td { padding: 0 5px; }
+table tr th { padding: 0 10px; }
+
+a {
+    text-decoration: none;
+    /* color: var(--link-color) !important; */
+    color: var(--text-color);
+    transition: color 0.2s;
+    cursor: pointer;
+}
+
+a:hover {
+    color: var(--link-color-hover) !important;
+}
+
+.row {
+    margin-right: 0px !important;
+    margin-left: 0px !important;
+}
+
+.v-popper--theme-tooltip .v-popper__inner {
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+    opacity: 0.9;
+    border: 2px solid var(--border-color);
+}
+
+.v-popper--theme-tooltip .v-popper__arrow-outer {
+    border-color: var(--border-color) !important;
+}
