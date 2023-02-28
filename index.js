@@ -2,8 +2,14 @@ import fs from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
-import { createServer } from 'vite';
+import ViteExpress from 'vite-express';
+
+if (process.env.NODE_ENV == 'production') { ViteExpress.config({ mode: 'production' }); }
+
 import { Server } from 'socket.io';
 import { parse } from 'node-html-parser';
 import safeEval from 'safe-eval';
@@ -17,7 +23,7 @@ import scrape from './scripts/scrape.js';
 import fetch from './scripts/fetch.js';
 import pagespeed from './scripts/pagespeed.js';
 
-let __filename = fileURLToPath(import.meta.url);
+let __filename = global.__filename ? global.__filename : fileURLToPath(import.meta.url);
 let __dirname = dirname(__filename);
 
 let valid = (url, domain) => {
@@ -102,30 +108,9 @@ checker.init({
     args.shift();
     args.shift();
 
-    let dev = args.includes('--dev');
-
     let app = express();
 
-    if (dev) {
-        let vite = await createServer({
-            server: { middlewareMode: true },
-            appType: 'custom'
-        });
-
-        app.use(vite.middlewares);
-
-        app.get('/', async (request, response) => {
-            let url = request.originalUrl;
-
-            try {
-                let template = fs.readFileSync('./index.html', 'utf-8');
-                template = await vite.transformIndexHtml(url, template);
-                response.send(template);
-            }
-
-            catch {}
-        })
-    }
+    let server = ViteExpress.listen(app, 8080, () => console.log('server started...'));
 
     app.use(express.json({ limit: '500MB' }));
 
@@ -178,7 +163,6 @@ checker.init({
         else { response.sendFile(`${__dirname}/index.html`); }
     });
 
-    let server = app.listen(8080);
     let io = new Server(server, { maxHttpBufferSize: 1e9 });
     io.on('connection', (socket) => {
         socket.on('crawl', (data) => {

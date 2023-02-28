@@ -3,7 +3,9 @@ import puppeteer from 'puppeteer';
 //import chalk from 'chalk';
 //import chroma from 'chroma-js';
 
-let browser = await puppeteer.launch({ headless: true });
+let browser;
+
+(async () => { browser = await puppeteer.launch({ headless: true }); })();
 
 export default async (url) => {
     let encoded = `https://pagespeed.web.dev/report?url=${encodeURIComponent(url)}`;
