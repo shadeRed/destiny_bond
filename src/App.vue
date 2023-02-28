@@ -122,7 +122,7 @@
         </h1>
         <div>
             <ul class="nav">
-                <li v-for="item in nav.filter(v => v.right == false)" @click="this.path == item.path ? () => {} : start_navigate(item.path)" :class="this.path == item.path ? 'active' : ''">{{ item.name }}</li>
+                <li v-for="item in nav.filter(v => v.right == false)" @click="path == item.path ? () => {} : start_navigate(item.path)" :class="path == item.path ? 'active' : ''">{{ item.name }}</li>
             </ul>
         </div>
         <component :is="page" :_global="_global" />

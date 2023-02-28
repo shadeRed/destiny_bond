@@ -69,7 +69,7 @@
             start() {
                 this.started = true;
 
-                let socket = io('http://localhost:5173');
+                let socket = io();
                 socket.on('connect', () => {
                     socket.emit('pagespeed', this.pages.map(v => v.url));
 

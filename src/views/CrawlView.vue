@@ -40,7 +40,7 @@
             start() {
                 this.active = 0;
 
-                let socket = io('http://localhost:5173');
+                let socket = io();
                 socket.on('connect', () => {
                     socket.emit('crawl', {
                         domain: this.domain,

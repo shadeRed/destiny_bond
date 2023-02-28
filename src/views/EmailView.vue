@@ -217,7 +217,7 @@
 
         generate() {
             this.generating = true;
-            let socket = io('http://localhost:5173');
+            let socket = io();
             socket.emit('email', {
                 spreadsheets: this.spreadsheets,
                 options: this.options,

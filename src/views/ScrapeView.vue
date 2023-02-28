@@ -51,7 +51,7 @@
                 this.started = true;
                 this.done = false;
 
-                let socket = io('http://localhost:5173');
+                let socket = io();
                 socket.on('connect', () => {
                     socket.emit('scrape', {
                         urls: this.pages.map(v => v.url),

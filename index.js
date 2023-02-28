@@ -98,14 +98,36 @@ checker.init({
 });
 
 (async () => {
+    let args = process.argv;
+    args.shift();
+    args.shift();
+
+    let dev = args.includes('--dev');
+
     let app = express();
-    let vite = await createServer({
-        server: { middlewareMode: true },
-        appType: 'custom'
-    });
+
+    if (dev) {
+        let vite = await createServer({
+            server: { middlewareMode: true },
+            appType: 'custom'
+        });
+
+        app.use(vite.middlewares);
+
+        app.get('/', async (request, response) => {
+            let url = request.originalUrl;
+
+            try {
+                let template = fs.readFileSync('./index.html', 'utf-8');
+                template = await vite.transformIndexHtml(url, template);
+                response.send(template);
+            }
+
+            catch {}
+        })
+    }
 
     app.use(express.json({ limit: '500MB' }));
-    app.use(vite.middlewares);
 
     app.get('/api/packages', (request, response) => {
         response.json(deps.map((v, i) => {
@@ -153,20 +175,10 @@ checker.init({
             response.sendFile(`${__dirname}${path}`);
         }
 
-        else {
-            let url = request.originalUrl;
-
-            try {
-                let template = fs.readFileSync('./index.html', 'utf-8');
-                template = await vite.transformIndexHtml(url, template);
-                response.send(template);
-            }
-
-            catch {}
-        }
+        else { response.sendFile(`${__dirname}/index.html`); }
     });
 
-    let server = app.listen(5173);
+    let server = app.listen(8080);
     let io = new Server(server, { maxHttpBufferSize: 1e9 });
     io.on('connection', (socket) => {
         socket.on('crawl', (data) => {
@@ -503,27 +515,6 @@ checker.init({
                     if (socket.connected) { return socket.disconnect(); }
                 })
             }
-
-            // for (let u = 0; u < urls.length; u++) {
-            //     try {
-            //         let result = await pagespeed(urls[u]);
-            //         socket.emit('pagespeed', {
-            //             action: 'DATA',
-            //             result,
-            //             index: u
-            //         });
-            //     }
-
-            //     catch (e) {
-            //         console.log(e);
-            //         socket.emit('pagespeed', {
-            //             action: 'ERROR',
-            //             index: u
-            //         });
-            //     }
-            // }
-
-            // socket.emit('pagespeed', { action: 'FINISH' });
         });
     });
 })();

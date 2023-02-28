@@ -21,12 +21,12 @@ export default defineConfig({
     },
 
     build: {
-        target: [ 'esnext' ]
+        target: [ 'es6' ]
     },
 
     optimizeDeps: {
         esbuildOptions: {
-            target: 'esnext',
-        },
+            target: 'es6',
+        }
     }
 })
