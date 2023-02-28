@@ -493,7 +493,7 @@ checker.init({
                 });
             }
 
-            for (let c = 0; c < 10; c++) {
+            for (let c = 0; c < 3; c++) {
                 start_next(() => {
                     socket.emit('pagespeed', { action: 'FINISH' });
                     if (socket.connected) { return socket.disconnect(); }
