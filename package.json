@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js --dev",
-    "build": "npm run vite_build && build.js",
+    "build": "npm run vite_build && node build.js",
     "vite_build": "vite build",
     "preview": "vite preview --port 8080",
     "licenses": "license-checker --direct"
