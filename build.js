@@ -2,8 +2,6 @@ import { execa } from 'execa';
 import fs from 'fs';
 
 (async () => {
-    console.log('building vite project...');
-    await execa('npm run vite_build');
     console.log('copying index.js');
     fs.copyFileSync('./index.js', './dist/index.js');
     console.log('copying package.json');
