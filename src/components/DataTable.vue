@@ -1,6 +1,4 @@
 <script setup>
-    import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
-    import { DynamicScroller } from 'vue-virtual-scroller';
 </script>
 
 <script>
@@ -21,96 +19,131 @@
             return {
                 scroller: null,
                 bound: true,
-                isFaded: false,
-                fadeOpacity: '1'
+                // -1: top
+                // 0: middle
+                // 1: bottom
+                fade_state: 0,
+                fadeOpacity: '1',
+                view_index: -1,
+                row_width: 0
             }
         },
 
-        components: { DynamicScroller },
+        computed: {
+            computed_height() {
+                return `${this.data.length * 32}px`;
+            },
 
-        mounted() {
-            this.scroller = document.querySelector('.vue-recycle-scroller');
-            this.scroller.addEventListener('wheel', () => { this.bound = false; });
-            this.scroller.addEventListener('scroll', () => {
-                let bottom = this.scroller.scrollHeight - this.scroller.scrollTop == 512;
-                if (bottom) { this.unfade() }
-                else if (!bottom && !this.isFaded) { this.fade() }
-            });
+            viewport() {
+                let arr = [];
+                for (let r = 0; r < 17; r++) {
+                    if (this.data[this.view_index + r] != undefined) { arr.push([(this.view_index * 32) + (r * 32), this.data[this.view_index + r]]); }
+                }
 
-            setTimeout(() => { if (this.scroller.clientHeight > 512) { this.fade() } }, 100);
+                return arr;
+            }
         },
 
         methods: {
-            fade() {
-                this.fadeOpacity = '0';
-                this.isFaded = true;
-                setTimeout(() => { this.fadeOpacity = '1' }, 200);
+            position_fade(element, position) {
+                element.style.width = `${this.$refs.table.clientWidth}px`;
+
+                if (position == 'bottom') { element.style.top = `${this.$refs.table.offsetHeight + this.$refs.table.getBoundingClientRect().top - 32}px` }
+                else if (position == 'top') { element.style.top = `${this.$refs.table.getBoundingClientRect().top + 32 + 3}px`; }
             },
 
-            unfade() {
-                this.fadeOpacity = '0';
-                setTimeout(() => { this.isFaded = false }, 200);
+            render() {
+                let scroll = this.$refs.table.scrollTop;
+                if (scroll == 0) { this.fade_state = -1; }
+                else if ((this.data.length * 32) - scroll < (32 * 17)) { this.fade_state = 1; }
+                else { this.fade_state = 0; }
+                if (this.view_index != Math.floor(scroll / 32)) { this.view_index = Math.floor(scroll / 32); }
             }
+        },
+
+        mounted() {
+            this.render();
+            this.$refs.table.addEventListener('scroll', () => this.render());
+            setInterval(() => {
+                if (this.$refs.fade_top != null) { this.position_fade(this.$refs.fade_top, 'top'); }
+                if (this.$refs.fade_bottom != null) { this.position_fade(this.$refs.fade_bottom, 'bottom'); }
+            }, 100);
         }
     }
 </script>
 
 <template>
-    <div class="container" style="position: relative;">
-        <div class="header row">
+    <div class="data-table" ref="table" :style="`max-height: ${32 * 17}px;`">
+        <div v-if="fade_state == 0 || fade_state == 1" class="fade fade-top" ref="fade_top"></div>
+        <div v-if="fade_state == 0 || fade_state == -1" class="fade fade-bottom" ref="fade_bottom"></div>
+        <div class="data-table-header">
             <slot name="header-before"></slot>
-            <div v-for="(item, index) in headers" :key="index" :class="`${item.class ? item.class : ''}`" :style="`${item.width ? `width: ${item.width};` : ''}${item.align ? `text-align: ${item.align};` : ''}`">
-                <slot :name="`header-${item.key.toLowerCase().split(' ').join('_')}`">{{ item.label }}</slot>
+            <div v-for="head in headers" :style="`height: 32px; !important; width: ${head.width}; ${head.css ? head.css : ''}`">
+                <slot :header=head>{{ head.label }}</slot>
             </div>
             <slot name="header-after"></slot>
         </div>
-        <DynamicScroller :items="data" container-tag="div" content-tag="div" keyField="index" :itemSize="32" :minItemSize="32">
-            <template #default="{ item }">
-                <div class="row">
-                    <slot name="data-before" :data="item"></slot>
-                    <div v-for="(header, index) in headers" :key="index" :style="`${header.width ? `width: ${header.width};` : ''}${header.align ? `text-align: ${header.align};` : ''}${header.css ? header.css : ''}`" :class="`${header.class ? header.class : ''}`">
-                        <slot :name="`data-${header.key.toLowerCase().split(' ').join('_')}`" :index="index" :data="item" :value="item[header.key]">{{ item[header.key] }}</slot>
+        <div class="data-table-rows-wrapper" :style="`min-height: ${computed_height};`">
+            <div class="data-table-rows" ref="data_rows">
+                <div class="data-row" v-for="item in viewport" :style="`top: ${item[0]}px;`">
+                    <slot name="data-before" :data="item[1]"></slot>
+                    <div v-for="head in headers" :style="`width: ${head.width}; ${head.css ? head.css : ''}`">
+                        <slot :name="`data-${head.key}`" :data="item[1]" :value="item[1][head.key]">{{ item[1][head.key] }}</slot>
                     </div>
-                    <slot name="data-after" :data="item"></slot>
+                    <slot name="data-after" :data="item[1]"></slot>
                 </div>
-            </template>
-        </DynamicScroller>
-        <div id="scroller-fade" :style="`opacity: ${fadeOpacity};${!isFaded ? ' display: none;' : ''}`"></div>
+            </div>
+        </div>
     </div>
 </template>
-<style>
-    .vue-recycle-scroller {
-        max-height: 512px;
-        overflow-y: scroll;
-    }
-
-    #scroller-fade {
-        left: 0;
-        right: 0;
-        height: 48px;
-        margin-top: -48px;
-        z-index: 100;
-        background: linear-gradient(#00000000, var(--background-color));
-        position: absolute;
-        transition: all 0.2s;
-    }
-
-    .vue-recycle-scroller__item-view div, .header {
-        height: 32px;
-        border-bottom: solid 3px var(--border-color);
+<style lang="scss" scoped>
+    .data-table {
+        overflow-y: scroll !important;
         position: relative;
+
+        .data-table-header {
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: var(--header-text-color);
+            position: sticky;
+            display: flex;
+            top: 0;
+            background-color: var(--background-color);
+            z-index: 100;
+            border-bottom: 3px solid var(--border-color);
+            div { display: inline-block; }
+        }
+
+        .data-table-rows-wrapper {
+            .data-table-rows {
+                position: relative;
+                .data-row {
+                    display: flex;
+                    height: 32px;
+                    width: 100%;
+                    position: absolute;
+                    border-bottom: 3px solid var(--border-color);
+
+                    div {
+                        display: inline-block;
+                        height: 32px;
+                        overflow: hidden;
+                        line-height: 28px;
+                    }
+                }
+            }
+        }
     }
 
-    .vue-recycle-scroller__item-view div div, .header div {
-        display: inline-block;
-        padding-top: 2px;
-        vertical-align: top;
+    div.fade {
+        position: fixed;
+        height: 32px;
+        z-index: 1000;
+        background-color: red;
+        transition: all 0.2s;
+        opacity: 1;
     }
 
-    .header div {
-        font-weight: bold;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        padding-left: 5px;
-    }
+    div.fade-top { background: linear-gradient(var(--background-color), #00000000); }
+    div.fade-bottom { background: linear-gradient(#00000000, var(--background-color)); }
 </style>

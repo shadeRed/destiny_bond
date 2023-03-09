@@ -1,8 +1,8 @@
 <script setup>
     import { io } from 'socket.io-client';
-    import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
-    import { DynamicScroller } from 'vue-virtual-scroller';
     import DataTable from '../components/DataTable.vue';
+    import StateIndicator from '../components/StateIndicator.vue';
+    import Progress from '../components/Progress.vue';
 </script>
 
 <script>
@@ -13,22 +13,26 @@
 
         data: () => {
             return {
+                started: false,
+                done: false,
                 domain: '',
                 exclude: '',
-                active: null,
                 pages: [],
                 headers: [
-                    { label: 'page', key: 'page', class: 'col-9' },
-                    { label: 'code', key: 'code', class: 'col', css: 'font-weight: bold; letter-spacing: 2px;' }
+                    { label: 'url', key: 'url', css: 'flex-grow: 1;' },
+                    { label: 'code', key: 'code', width: '100px', css: 'font-weight: bold; text-align: center; letter-spacing: 2px;' }
                 ]
             }
         },
-        components: { DynamicScroller },
 
         watch: {
             domain() { this.catch_unsaved() },
             exclude() { this.catch_unsaved() },
             pages() { this.catch_unsaved() }
+        },
+
+        computed: {
+            finished() { return this.pages.filter(v => v.state > 0).length; }
         },
 
         methods: {
@@ -38,8 +42,10 @@
             },
 
             start() {
-                this.active = 0;
+                this.started = true;
+                this.done = false;
 
+                let start_length = this.pages.length;
                 let socket = io();
                 socket.on('connect', () => {
                     socket.emit('crawl', {
@@ -48,15 +54,29 @@
                     });
 
                     socket.on('crawl', (result) => {
-                        if (result.action == 'ADD') {
-                            this.pages.push({ index: this.pages.length, page: result.path, code: '000', redirect: null });
+                        if (result.action == 'QUEUE') {
+                            this.pages.push({
+                                index: this.pages.length,
+                                url: `${this.domain}${result.path}`,
+                                code: '000',
+                                redirect: null,
+                                state: -1
+                            });
                         }
 
-                        else if (result.action == 'DONE') {
-                            let index = this.pages.findIndex(v => v.page == result.path);
+                        else if (result.action == 'DATA') {
+                            let index = result.index + start_length;
                             this.pages[index].code = result.status;
-                            if (this.pages[index].code.startsWith('3')) { this.pages[index].redirect = result.redirect }
-                            this.active += 1;
+                            if (this.pages[index].code.startsWith('2') || this.pages[index].code.startsWith('3')) { this.pages[index].state = 1; }
+                            else { this.pages[index].state = 2; }
+                            this.pages[index].redirect = result.redirect;
+                        }
+
+                        else if (result.action == 'WORKING') { this.pages[result.index + start_length].state = 0; }
+
+                        else if (result.action == 'FINISH') {
+                            this.done = true;
+                            this.started = false;
                         }
                     });
                 });
@@ -87,13 +107,13 @@
            </tr> 
            <tr>
                 <td style="padding: 0px;">
-                    <input v-tooltip="'the domain that you wish to crawl'" type="text" v-model="domain" placeholder="https://www.domain.com/" style="width: 100%; border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                    <input v-tooltip="'the domain that you wish to crawl'" type="text" v-model="domain" placeholder="https://www.domain.com/" style="width: 100%; border-top-right-radius: 0; border-bottom-right-radius: 0;" :disabled="started">
                 </td>
                 <td style="padding: 0px;">
-                    <input v-tooltip="'a query selector to exclude specific anchor elements'" type="text" v-model="exclude" placeholder="nav" style="width: 100%; border-radius: 0; border-left: none; border-right: none;">
+                    <input v-tooltip="'a query selector to exclude specific anchor elements'" type="text" v-model="exclude" placeholder="nav" style="width: 100%; border-radius: 0; border-left: none; border-right: none;" :disabled="started">
                 </td>
                 <td style="text-align: left; padding: 0px;">
-                    <button style="width: 100%; border-top-left-radius: 0; border-bottom-left-radius: 0;" :disabled="!domain" @click="start()">Start</button>
+                    <button style="width: 100%; border-top-left-radius: 0; border-bottom-left-radius: 0;" :disabled="!domain || started" @click="start()">start</button>
                 </td>
            </tr>
         </table>
@@ -101,18 +121,9 @@
             <template #header-before>
                 <div style="width: 40px;"></div>
             </template>
-            <template #header-after>
-                <div class="col">status</div>
-            </template>
 
             <template #data-before="{ data }">
-                <div style="width: 40px;">
-                    <template v-if="data.index < active">
-                        <i v-if="data.code.startsWith('2') || data.code.startsWith('3')" class="bi bi-check-lg" style="color: var(--colors-green); font-size: 18px;"></i>
-                        <i v-else class="bi bi-x-lg" style="color: var(--colors-red); font-size: 16px;"></i>
-                    </template>
-                    <div v-else-if="data.index == active" class="spinner-border" style="color: var(--border-color); width: 20px; height: 20px; margin-top: 5px; font-size: 14px;"></div>
-                </div>
+                <StateIndicator :state="data.state" style="width: 40px;" />
             </template>
             <template #data-code="{ value }">
                 <span v-if="value.startsWith('0')" style="color: var(--border-color);">{{ value }}</span>
@@ -121,15 +132,9 @@
                 <span v-else-if="value.startsWith('4') || value.startsWith('5')" style="color: var(--colors-red);">{{ value }}</span>
                 <span v-else style="color: var(--colors-blue);">{{ value }}</span>
             </template>
-            <template #data-after="{ data }">
-                <div style="font-weight: bold; letter-spacing: 2px;" class="col">
-                    <span v-if="data.index < active" style="color: var(--colors-green)">done</span>
-                    <span v-else-if="data.index == active" style="color: var(--colors-yellow)">working</span>
-                    <span v-else style="color: var(--border-color)">queued</span>
-                </div>
-            </template>
         </DataTable>
-        <button v-if="pages.length" :disabled="active != pages.length" style="margin-top: 5px; border-radius: 5px; width: 100%;" @click="download()">export</button>
+        <Progress v-if="pages.length > 0" :percent="(finished / pages.length) * 100" :label="`${finished}/${pages.length}`" />
+        <button v-if="pages.length > 0" :disabled="!done" style="margin-top: 5px; border-radius: 5px; width: 100%;" @click="download()">export</button>
     </div>
 </template>
 <style scoped>

@@ -22,9 +22,16 @@ import checker from 'license-checker';
 import scrape from './scripts/scrape.js';
 import fetch from './scripts/fetch.js';
 import pagespeed from './scripts/pagespeed.js';
+import puppeteer from 'puppeteer';
 
 let __filename = global.__filename ? global.__filename : fileURLToPath(import.meta.url);
 let __dirname = dirname(__filename);
+
+let sleep = (ms) => {
+    return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms);
+    });
+}
 
 let valid = (url, domain) => {
     let excludes = [ 'http', 'tel', 'mailto', '#', 'javascript' ];
@@ -173,19 +180,34 @@ checker.init({
             queue.push('/');
 
             socket.emit('crawl', {
-                action: 'ADD',
+                action: 'QUEUE',
                 path: '/'
             });
 
             let next = async (index = 0) => {
                 if (!socket.connected) { return }
-                if (index >= queue.length) { return socket.disconnect() }
+                if (index >= queue.length) {
+                    socket.emit('crawl', { action: 'FINISH' });
+                    return socket.disconnect();
+                }
+                
+                socket.emit('crawl', {
+                    action: 'WORKING',
+                    index
+                });
+
                 let path = clean(queue[index]);
 
                 let response = await fetch(`${domain}${path}`);
                 let html = response.data;
                 if (!html) {
-                    socket.emit('crawl', { action: 'DONE', path: path, status: `${response.status}` });
+                    socket.emit('crawl', {
+                        action: 'DATA',
+                        path: path,
+                        status: `${response.status}`,
+                        redirect: null,
+                        index
+                    });
                     return next(index + 1);
                 }
 
@@ -211,12 +233,28 @@ checker.init({
 
                     if (!queue.includes(href)) {
                         queue.push(href);
-                        socket.emit('crawl', { action: 'ADD', path: href });
+                        socket.emit('crawl', { action: 'QUEUE', path: href });
                     }
                 }
 
-                if (`${response.status}`.startsWith('3')) { socket.emit('crawl', { action: 'DONE', path: queue[index], status: `${response.status}`, redirect: response.redirect }) }
-                else { socket.emit('crawl', { action: 'DONE', path: queue[index], status: `${response.status}` }) }
+                if (`${response.status}`.startsWith('3')) {
+                    socket.emit('crawl', {
+                        action: 'DATA',
+                        path: queue[index],
+                        status: `${response.status}`,
+                        redirect: response.redirect,
+                        index
+                    });
+                }
+                else {
+                    socket.emit('crawl', {
+                        action: 'DATA',
+                        path: queue[index],
+                        status: `${response.status}`,
+                        redirect: null,
+                        index
+                    });
+                }
 
                 next(index + 1);
             }
@@ -500,5 +538,77 @@ checker.init({
                 })
             }
         });
+
+        socket.on('review', async (url) => {
+            let browser = await puppeteer.launch();
+            let page = await browser.newPage();
+            await page.setRequestInterception(true);
+            page.on('request', (request) => {
+                if (['image', 'stylesheet', 'font'].includes(request.resourceType())) { request.abort(); }
+                else { request.continue(); }
+            });
+
+            await page.goto(url);
+
+            try { await page.waitForSelector('.gws-localreviews__general-reviews-block', { timeout: 5000 }); }
+            catch { socket.emit('review', { action: 'ERROR' }) }
+
+            await sleep(1000);
+            await page.mouse.click(300, 300);
+            await sleep(1000);
+            await page.mouse.move(500, 500);
+
+            let total = await page.evaluate(() => {
+                let review_container = document.querySelector('.review-score-container');
+                return parseInt(review_container.children[0].children[2].children[0].children[0].textContent.split(' ')[0].split(',').join(''));
+            });
+
+            socket.emit('review', {
+                action: 'TOTAL',
+                value: total
+            });
+
+            let reviews = [];
+            do {
+                await page.mouse.wheel({ deltaY: 1000 });
+                await sleep(500);
+                await page.mouse.wheel({ deltaY: -1000 });
+
+                let created = await page.evaluate((skip) => {
+                    let elements = document.querySelectorAll('.gws-localreviews__google-review');
+                    let arr = [];
+                    for (let e = skip ? 1 : 0; e < elements.length; e++) {
+                        let container = elements[e].children[1];
+                        let author = container.children[0].children[0].children[0].textContent;
+                        let rating = parseInt(container.children[3].children[0].children[0].children[0].getAttribute('aria-label').split(' ')[1]);
+
+                        let body = '';
+                        let review_container = container.querySelector('.review-full-text');
+                        if (review_container) { body = review_container.childNodes[0].nodeValue }
+                        let obj = { author, rating, body };
+                        arr.push(obj);
+                    }
+
+                    return arr;
+                }, reviews.length == 0 ? false : true);
+
+                socket.emit('review', {
+                    action: 'DATA',
+                    value: created
+                });
+                
+                reviews.push(...created);
+                if (created.length != 10 && created.length != 0) { total = reviews.length; }
+
+                await page.evaluate(() => {
+                    let elements = document.querySelectorAll('.gws-localreviews__google-review');
+                    [...elements].forEach((v, i, a) => { if (i != a.length - 1) { v.remove(); } })
+                })
+            }
+
+            while (reviews.length < total);
+
+            socket.emit('review', { action: 'DONE' });
+        })
     });
 })();

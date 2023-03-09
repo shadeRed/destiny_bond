@@ -11,6 +11,7 @@
     import ScrapeView from './views/ScrapeView.vue';
     import EmailView from './views/EmailView.vue';
     import PagespeedView from './views/PagespeedView.vue';
+    import ReviewsView from './views/ReviewsView.vue';
 
     export default {
         data: () => {
@@ -20,11 +21,12 @@
                 page: null,
                 path: '/',
                 nav: [
-                    { name: 'About', path: '/', right: false },
-                    { name: 'crawl', path: '/crawl', right: false },
-                    { name: 'scrape', path: '/scrape', right: false },
-                    { name: 'pagespeed', path: '/pagespeed', right: false },
-                    { name: 'emails', path: '/email', right: false },
+                    { name: 'about', path: '/' },
+                    { name: 'crawl', path: '/crawl' },
+                    { name: 'scrape', path: '/scrape' },
+                    { name: 'pagespeed', path: '/pagespeed' },
+                    { name: 'emails', path: '/email' },
+                    { name: 'reviews', path: '/reviews' },
                 ],
 
                 page_map: [
@@ -32,7 +34,8 @@
                     { path: '/crawl', component: markRaw(CrawlView), exact: false },
                     { path: '/scrape', component: markRaw(ScrapeView), exact: false },
                     { path: '/email', component: markRaw(EmailView), exact: false },
-                    { path: '/pagespeed', component: markRaw(PagespeedView), exact: false }
+                    { path: '/pagespeed', component: markRaw(PagespeedView), exact: false },
+                    { path: '/reviews', component: markRaw(ReviewsView), exact: false }
                 ],
 
                 _global: {
@@ -122,7 +125,7 @@
         </h1>
         <div>
             <ul class="nav">
-                <li v-for="item in nav.filter(v => v.right == false)" @click="path == item.path ? () => {} : start_navigate(item.path)" :class="path == item.path ? 'active' : ''">{{ item.name }}</li>
+                <li v-for="item in nav" @click="path == item.path ? () => {} : start_navigate(item.path)" :class="path == item.path ? 'active' : ''">{{ item.name }}</li>
             </ul>
         </div>
         <component :is="page" :_global="_global" />

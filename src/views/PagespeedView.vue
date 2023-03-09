@@ -8,6 +8,7 @@
     import SpreadsheetUploadButton from '../controls/SpreadsheetUploadButton.vue';
     import TabPicker from '../controls/TabPicker.vue';
     import RadialScore from '../components/RadialScore.vue';
+    import StateIndicator from '../components/StateIndicator.vue';
 </script>
 
 <script>
@@ -171,11 +172,12 @@
             </template>
 
             <template #data-before="{ data }">
-                <div style="width: 40px;">
-                    <div v-if="data.state == 0" class="spinner-border" style="color: var(--border-color); width: 20px; height: 20px; margin-top: 5px; font-size: 14px;"></div>
+                <StateIndicator :state="data.state" style="width: 40px;" />
+                <!-- <div style="width: 40px; display: inline-block; margin: 0; padding: 0; overflow: hidden; text-align: center; vertical-align: midle;">
+                    <div v-if="data.state == 0" class="spinner-border" style="color: var(--border-color); width: 20px; height: 20px; font-size: 14px;"></div>
                     <i v-else-if="data.state == 1" class="bi bi-check-lg" style="color: var(--colors-green); font-size: 18px;"></i>
                     <i v-else-if="data.state == 2" class="bi bi-x-lg" style="color: var(--colors-red); font-size: 16px;"></i>
-                </div>
+                </div> -->
             </template>
 
             <template v-for="key in [
@@ -187,8 +189,7 @@
                 'data-desktop_accessibility',
                 'data-desktop_best_practices',
                 'data-desktop_seo'
-                ]"
-            #[key]="{ value }">
+            ]" #[key]="{ value }">
                 <span v-if="value == '0'" style="color: var(--border-color);">{{ value }}</span>
                 <span v-else-if="parseInt(value) >= 90" style="color: var(--colors-green)">{{ value }}</span>
                 <span v-else-if="parseInt(value) >= 50" style="color: var(--colors-yellow)">{{ value }}</span>

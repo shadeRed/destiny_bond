@@ -24,17 +24,17 @@ export default {
     .progress-wrapper {
         display: relative;
         width: 100%;
-        height: 26px;
+        height: 18px;
         background-color: var(--background-color);
         border: 3px solid var(--border-color);
-        border-radius: 20px;
-        margin-top: 20px;
+        border-radius: 10px;
+        margin: 2px;
 
         .progress-label {
             position: absolute;
             color: #FFF;
             margin: 0 auto;
-            line-height: 20px;
+            line-height: 12px;
             width: 100%;
             left: 0;
             text-align: center;

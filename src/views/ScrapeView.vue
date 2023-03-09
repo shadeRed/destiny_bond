@@ -6,6 +6,7 @@
     import InputRow from '../components/InputRow.vue';
     import SpreadsheetUploadButton from '../controls/SpreadsheetUploadButton.vue';
     import TabPicker from '../controls/TabPicker.vue';
+    import StateIndicator from '../components/StateIndicator.vue';
 </script>
 
 <script>
@@ -21,7 +22,7 @@
                 done: false,
                 headers: [
                     { label: 'url', key: 'url', width: 'calc(100% - 140px)' },
-                    { label: 'code', key: 'code', width: '100px', align: 'center', css: 'font-weight: bold; letter-spacing: 2px;' }
+                    { label: 'code', key: 'code', width: '100px', css: 'font-weight: bold; letter-spacing: 2px; text-align: center;' }
                 ]
             }
         },
@@ -136,16 +137,10 @@
                 <div style="width: 40px;"></div>
             </template>
 
-            <template #data-before="{ data }">
-                <div style="width: 40px;">
-                    <div v-if="data.state == 0" class="spinner-border" style="color: var(--border-color); width: 20px; height: 20px; margin-top: 5px; font-size: 14px;"></div>
-                    <i v-else-if="data.state == 1" class="bi bi-check-lg" style="color: var(--colors-green); font-size: 18px;"></i>
-                    <i v-else-if="data.state == 2" class="bi bi-x-lg" style="color: var(--colors-red); font-size: 16px;"></i>
-                </div>
-            </template>
+            <template #data-before="{ data }"><StateIndicator :state="data.state" style="width: 40px;" /></template>
             <template #data-url="{ value }">
-                <a v-if="value.startsWith('http')" :href="value" target="_blank">{{ value }}</a>
-                <p v-else>{{ value }}</p>
+                <a v-if="value.startsWith('http')" :href="value" target="_blank" style="height: 32px;">{{ value }}</a>
+                <p v-else style="height: 32px;">{{ value }}</p>
             </template>
             <template #data-code="{ value }">
                 <span v-if="value.startsWith('0')" style="color: var(--border-color);">{{ value }}</span>
